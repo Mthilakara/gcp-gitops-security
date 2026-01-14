@@ -1,0 +1,21 @@
+title = "Custom Gitleaks Config"
+
+[[rules]]
+    id = "generic-secret"
+    description = "Generic Secret/API Key detected"
+    # This is the exact regex from the Zachary Rice article
+    regex = '''(?i)[\w.-]{0,50}?(?:access|auth|(?-i:[Aa]pi|API)|credential|creds|key|passw(?:or)?d|secret|token)(?:[ \t\w.-]{0,20})[\s'"]{0,3}(?:=|>|:{1,3}=|\|\||:|=>|\?=|,)[\x60'"\s=]{0,5}([\w.=-]{10,150}|[a-z0-9][a-z0-9+/]{11,}={0,3})(?:[\x60'"\s;]|\\[nr]|$)'''
+    
+    # Entropy helps distinguish real keys from random text like "password123"
+    # 3.5 is the recommended threshold from the article
+    entropy = 3.5
+    
+    # These keywords trigger the regex for better performance
+    keywords = ["access", "auth", "api", "credential", "creds", "key", "passwd", "password", "secret", "token"]
+
+[allowlist]
+    description = "Exclude common non-secrets"
+    paths = [
+        '''gitleaks\.toml''',
+        '''(?i)\.(bmp|gif|jpe?g|png|svg|tiff?)$'''
+    ]
