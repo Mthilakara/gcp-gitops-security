@@ -21,7 +21,7 @@ jobs:
           tar -xzf gitleaks.tar.gz gitleaks
           sudo mv gitleaks /usr/local/bin/gitleaks
 
-      # Detection only: NEVER fail the workflow
+      # FIX: Removed --no-git to allow scanning of the commit history
       - name: Run Gitleaks (detection only)
         run: |
           gitleaks detect \
@@ -30,8 +30,7 @@ jobs:
             --report-format json \
             --report-path gitleaks.json \
             --exit-code 0 \
-            --no-git \
-            --verbose || true
+            --verbose
 
       - name: Authenticate to Google Cloud
         if: always()
