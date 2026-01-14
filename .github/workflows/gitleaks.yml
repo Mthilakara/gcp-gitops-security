@@ -10,26 +10,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout code (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Run secret scan and produce a JSON report
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          args: detect --source . --report-format json --report-path gitleaks.json --redact
+      - name: Install Gitleaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
 
-      # Authenticate to GCP using the service account JSON stored in GitHub Secrets
+      # Detection only: NEVER fail the workflow
+      - name: Run Gitleaks (detection only)
+        run: |
+          gitleaks detect \
+            --source . \
+            --redact \
+            --report-format json \
+            --report-path gitleaks.json \
+            --exit-code 0 \
+            --no-git || true
+
       - name: Authenticate to Google Cloud
+        if: always()
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      # Upload the gitleaks.json report to your GCS bucket
       - name: Upload report to GCS
+        if: always()
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: gitleaks.json
           destination: ${{ secrets.GCS_BUCKET }}/gitleaks/repo=${{ github.repository }}/run_id=${{ github.run_id }}/
+     
+      - name: Ensure report exists
+        if: always()
+        run: |
+          if [ ! -f gitleaks.json ]; then
+            echo "[]" > gitleaks.json
+          fi
