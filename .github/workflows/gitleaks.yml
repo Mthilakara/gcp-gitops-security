@@ -21,17 +21,18 @@ jobs:
           tar -xzf gitleaks.tar.gz gitleaks
           sudo mv gitleaks /usr/local/bin/gitleaks
 
-      # FIX: Removed --no-git to allow scanning of the commit history
       - name: Run Gitleaks (detection only)
         run: |
           gitleaks detect \
             --source . \
+            --config .gitleaks.toml \
             --redact \
             --report-format json \
             --report-path gitleaks.json \
             --exit-code 0 \
             --verbose
 
+      # Your GCS steps remain the same
       - name: Authenticate to Google Cloud
         if: always()
         uses: google-github-actions/auth@v2
@@ -44,10 +45,3 @@ jobs:
         with:
           path: gitleaks.json
           destination: ${{ secrets.GCS_BUCKET }}/gitleaks/repo=${{ github.repository }}/run_id=${{ github.run_id }}/
-     
-      - name: Ensure report exists
-        if: always()
-        run: |
-          if [ ! -f gitleaks.json ]; then
-            echo "[]" > gitleaks.json
-          fi
